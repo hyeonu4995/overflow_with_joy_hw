@@ -1,5 +1,7 @@
 # overflow_with_joy
 
+Note: the code in [`code/README.md`](/home/isl_hwpark/overflow_with_joy_hw/code/README.md) has been refactored to use a 32-bit x86 baseline. Use that guide for current build and run instructions.
+
 This is a collection of small demo programs written in c that are vulnerable for overflows and exploits.
 
 - [Background](#background) and general explanations

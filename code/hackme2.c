@@ -3,16 +3,20 @@
 #include <string.h>
 
 int check_password(char *password){
-  int correct = 0;
-  char password_buffer[16];
+  struct password_state {
+    char password_buffer[16];
+    int correct;
+  } state;
+
+  state.correct = 0;
+
+  strcpy(state.password_buffer, password);
   
-  strcpy(password_buffer, password);
-  
-  if (strcmp(password_buffer, "actualpw") == 0) {
-    correct = 1;
+  if (strcmp(state.password_buffer, "actualpw") == 0) {
+    state.correct = 1;
   }
   
-  return correct;
+  return state.correct;
   
   
 }
