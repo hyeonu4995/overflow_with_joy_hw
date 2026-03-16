@@ -3,6 +3,9 @@
 이 디렉터리의 예제들은 이제 32비트 x86 리눅스를 기준으로 정리되어 있습니다.  
 빌드와 실행은 `code/` 디렉터리에서 진행하면 됩니다.
 
+- 사용 가이드: [README.md](/home/isl_hwpark/overflow_with_joy_hw/code/README.md)
+- 답안/풀이: [SOLUTIONS.md](/home/isl_hwpark/overflow_with_joy_hw/code/SOLUTIONS.md)
+
 ## 1. 준비물
 
 - `gcc-multilib`
