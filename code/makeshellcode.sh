@@ -1,50 +1,35 @@
 #!/bin/bash
+set -eu
 
-#clear everything from previous runs
-rm gdb_output.log > /dev/null 2>&1
-rm gdb_output2.log > /dev/null 2>&1
-rm gdbcommands > /dev/null 2>&1
+tmp_binary="shellcode"
+tmp_dump="shellcode.dump"
 
-#create the assembly file (we actually don't need it)
-gcc -S -no-pie shellcode-creator.c -o shellcode.s -O0 -fno-stack-protector -g 
+cleanup() {
+  rm -f "$tmp_binary" "$tmp_dump"
+}
 
-#create the 'shellcode' executable
-gcc  -no-pie shellcode-creator.c -o shellcode -O0 -fno-stack-protector -g -fPIC
+trap cleanup EXIT
 
-#run gdb to look at the addresses
-echo -e "disass main\nq" >> gdbcommands
-gdb ./shellcode -q -x gdbcommands > gdb_output.log
-#gdb ./shellcode -q -x gdbcommands 
-rm gdbcommands
+gcc -m32 shellcode-creator.c -o "$tmp_binary" -O0 -fno-stack-protector -fno-pie -no-pie -g
 
-#get the adress of the first and last of our own instructions and the number of bytes we want 
-LINENR=$(grep '<+4>' gdb_output.log | head -1 | sed -e 's/^[ \t]*//'| sed 's/ .*//')
-LASTLINENR=$(grep 'retq' gdb_output.log| head -1 | sed -e 's/^[ \t]*//'| sed 's/ .*//')
-LASTLINENR=$(printf "%d\n" $(($LASTLINENR - 0x06 )))
-BYTES=$(printf "%d\n" $(($LASTLINENR - $LINENR )))
+objdump -d "$tmp_binary" > "$tmp_dump"
 
-#printf "From 0x%X to 0x%X\n" $LINENR $LASTLINENR
-#echo $BYTES
+shellcode_bytes=$(
+  awk '
+    /<shellcode>:/ { in_shellcode=1; next }
+    in_shellcode && /\tret/ { exit }
+    in_shellcode {
+      for (i = 2; i <= 7; i++) {
+        if ($i ~ /^[0-9a-f][0-9a-f]$/) {
+          printf "\\x%s", $i;
+        }
+      }
+    }
+  ' "$tmp_dump"
+)
 
-#run gdb again and get the hex commands for the assembly instructions
-echo -e "x/"$BYTES"xb "$LINENR" \nq\n" >> gdbcommands
-gdb ./shellcode -q -x gdbcommands > gdb_output2.log
-#gdb ./shellcode -q -x gdbcommands 
-rm gdbcommands
+printf "%s\n" "$shellcode_bytes"
 
-#reformat and strip the output to remove line numbers, spaces etc. and only present the commands in the format \xA1
-tail -n+2 gdb_output2.log | sed -n '/<main+/p'  | grep -o '[^:]*$' | sed -e 's/^[ \t]*//' | sed 's/0x/\\x/g' | sed "s/[[:space:]]\+//g" | tr -d '\n' > output.txt
-
-cat output.txt
-echo ""
-if grep -q "\x00" output.txt; then
+if printf "%s" "$shellcode_bytes" | grep -q '\\x00'; then
     echo -e "\nWARNING: There are still \\\x00 (null bytes) in this shellcode"
 fi
-
-#just to be sure, remove everything again
-rm gdb_output.log > /dev/null 2>&1
-rm gdb_output2.log > /dev/null 2>&1
-rm gdbcommands > /dev/null 2>&1
-rm shellcode.s  > /dev/null 2>&1
-rm shellcode  > /dev/null 2>&1
-rm output.txt 

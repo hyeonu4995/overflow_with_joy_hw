@@ -27,12 +27,15 @@ void play()
 
 int main()
 {
-	void (*functionptr)();
-  functionptr = &play;
-  char name[8];   // first name of the player
+  struct player_state {
+    char name[8];
+    void (*functionptr)();
+  } player;
+
+  player.functionptr = &play;
   printf("Welcome to this game of luck! What is your fist name:\n");
-  scanf("%s",name);
-  functionptr();
+  scanf("%s", player.name);
+  player.functionptr();
   printf("Game finished.\n");
 	return 0;  
 }
